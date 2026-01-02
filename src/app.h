@@ -15,7 +15,6 @@
 #include <QMessageBox>
 
 #include "WidgetConfig.h"
-#include "KPlotStreamer.h"
 #include "processor.h"
 
 class app : public QWidget {
@@ -29,7 +28,6 @@ private:
 
   QTabWidget widget_main;
   WidgetConfig widget_config;
-  KPlotStreamer widget_disp;
 
   bool is_playing = false;
 

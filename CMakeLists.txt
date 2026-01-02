@@ -1,6 +1,5 @@
-# CMAKE version of Ubuntu 16.04 LTS is 3.5.
-cmake_minimum_required(VERSION 3.5)
-project(GUI_DSP)
+cmake_minimum_required(VERSION 3.14)
+project(RealTimeTestGUI)
 
 #find_package(MKL CONFIG REQUIRED)
 
@@ -13,7 +12,6 @@ set(SRC_Qt)
 
 include(${CMAKE_CURRENT_LIST_DIR}/lib/STFT/cpp/STFT_cpp.cmake)
 
-include(${CMAKE_CURRENT_LIST_DIR}/lib/KSpecStream/KSpecStream.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/lib/RtAudioWrapper/RtAudio.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/lib/WAV/WAV.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/lib/KJsonConfig/KJsonConfig.cmake)
@@ -35,7 +33,6 @@ file(MAKE_DIRECTORY ${PROJECT_SOURCE_DIR}/tmp)
 	list(APPEND SRC_Qt_MOC
 		${PROJECT_SOURCE_DIR}/src/app.h
 		${PROJECT_SOURCE_DIR}/src/WidgetConfig.h
-		${PROJECT_SOURCE_DIR}/src/KPlotStreamer.h
 		${PROJECT_SOURCE_DIR}/src/processor.h
 	)	
 	
@@ -43,7 +40,6 @@ file(MAKE_DIRECTORY ${PROJECT_SOURCE_DIR}/tmp)
 	list(APPEND SRC_Qt
 		${PROJECT_SOURCE_DIR}/src/app.cpp
 		${PROJECT_SOURCE_DIR}/src/WidgetConfig.cpp
-		${PROJECT_SOURCE_DIR}/src/KPlotStreamer.cpp
 		${PROJECT_SOURCE_DIR}/src/processor.cpp
 		)
 	

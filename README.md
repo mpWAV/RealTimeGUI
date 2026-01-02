@@ -1,5 +1,6 @@
-# template_GUI_DSP
-GUI for DSP demonstration using QtFrameworks
+# Real Time GUI   
+실시간 동작 확인 및 관리용 GUI
 
-
-![image](https://github.com/kooBH/template_GUI_DSP/assets/39723411/733f3d95-6ac6-46d0-a0f8-b9078c827dac)
+- 리포지토리에는 실제 알고리즘 포함하지 않음  
+- 더미 mpNC 사용    
+  -> 배포 및 테스트 시 실제 mpNC로 교체하여 진행    

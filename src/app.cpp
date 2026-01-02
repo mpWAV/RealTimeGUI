@@ -1,8 +1,6 @@
 #include "app.h"
 
-app::app():
-    widget_disp(640,256,512,400)
-  {
+app::app(){
   setStyleSheet("\
 			QWidget{background:rgb(235, 250, 235);}\
       \
@@ -24,7 +22,6 @@ app::app():
     layout_top.setAlignment(Qt::AlignLeft);
 
     QObject::connect(&btn_play, &QPushButton::pressed, this, &app::slot_btn_play);
-    QObject::connect(&proc, &processor::signal_update, &widget_disp, &KPlotStreamer::slot_update);
     /* Processor */
     QObject::connect(&btn_play, &QPushButton::pressed, &proc, &processor::slot_toggle);
 
@@ -50,7 +47,6 @@ app::app():
       \
       ");
 
-    widget_main.addTab(&widget_disp, "display");
 
 
     widget_main.addTab(&widget_config, "parameters");
@@ -114,7 +110,6 @@ void app::slot_btn_play() {
  void app::setProcParam() {
    proc.device_in = static_cast<int>(get("Input/Output", "input_device"));
    proc.multiple = static_cast<double>(get("Input/Output", "multiple"));
-   widget_disp.SetColormapRange(get("colormap", "color_max"), get("colormap", "color_min"));
 
  }
 
