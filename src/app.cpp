@@ -47,7 +47,12 @@ app::app(){
       \
       ");
 
-
+    widget_main.addTab(&widget_log, "log");
+    widget_log.setStyleSheet("\
+		QWidget{background:rgb(255,255,255);}\
+    QPlainTextEdit{background:rgb(238, 238, 238);}\
+    \
+    ");
 
     widget_main.addTab(&widget_config, "parameters");
     widget_config.setStyleSheet("\
@@ -56,7 +61,6 @@ app::app(){
 			QComboBox{background:rgb(238, 238, 238);}\
       \
       ");
-    
 
     widget_config.Add("Input/Output", "../config/io.json");
     widget_config.Add("colormap", "../config/display.json");
@@ -87,7 +91,6 @@ void app::slot_btn_play() {
   std::cout << is_playing << std::endl;
 }
 
-
  double app::get(QString a, string b) {
   double val;
    json j = widget_config[a.toStdString()][b]["value"];
@@ -109,6 +112,7 @@ void app::slot_btn_play() {
 
  void app::setProcParam() {
    proc.device_in = static_cast<int>(get("Input/Output", "input_device"));
+   proc.device_out = static_cast<int>(get("Input/Output", "output_device"));
    proc.multiple = static_cast<double>(get("Input/Output", "multiple"));
 
  }

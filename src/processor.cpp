@@ -4,10 +4,12 @@
 processor::processor() {
   atomic_thread.store(false);
   buf_in = new short[in_channels * n_hop];
+  buf_out = new short[out_channels * n_hop];
 }
 
 processor::~processor() {
   delete[] buf_in;
+  delete[] buf_out;
 }
 
 void processor::Process() {
@@ -17,7 +19,15 @@ void processor::Process() {
   }
   atomic_thread.store(true);
 
-  rt_input = new RtInput(device_in, in_channels, sr, n_hop, n_fft);
+  mpNCObj = mpNC_construct3(L"mpNC.onnx", 1,2);
+
+
+  rt_output = new RtOutput(device_out, out_channels, sr, sr, n_hop, n_hop);
+  rt_output->PrepStream();
+  rt_output->Start();
+  printf("OutputStream::Start()\n");
+
+  rt_input = new RtInput(device_in, in_channels, sr, n_hop, n_hop);
   printf("==OpenAudioStream==\ndevice : %d\n_channelsannels : %d\nsamplesr : %d\n", device_in, in_channels, sr);
   rt_input->Start();
 
@@ -28,12 +38,21 @@ void processor::Process() {
       for (int i = 0; i < n_hop * in_channels; i++) {
         buf_in[i] = buf_in[i] * multiple;
       }
-      emit(signal_update(buf_in));
+      //emit(signal_update(buf_in));
+      mpNC_process_int16(mpNCObj, buf_in, buf_in);
+
+      for (int i = 0; i < out_channels; i++) {
+        for (int j = 0; j < n_hop; j++) {
+          buf_out[j * out_channels + i] = buf_in[j];
+        }
+      }
+      rt_output->AppendQueue(buf_out);
     }
     else
       SLEEP(10);
   }
   atomic_thread.store(false);
+  mpNC_release(mpNCObj);
 }
 
 void processor::Process(const char* path){

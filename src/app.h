@@ -15,6 +15,7 @@
 #include <QMessageBox>
 
 #include "WidgetConfig.h"
+#include "WidgetLog.h"
 #include "processor.h"
 
 class app : public QWidget {
@@ -28,6 +29,7 @@ private:
 
   QTabWidget widget_main;
   WidgetConfig widget_config;
+  WidgetLog widget_log;
 
   bool is_playing = false;
 

@@ -32,6 +32,7 @@ file(MAKE_DIRECTORY ${PROJECT_SOURCE_DIR}/tmp)
 	## sources to be processed by MOC
 	list(APPEND SRC_Qt_MOC
 		${PROJECT_SOURCE_DIR}/src/app.h
+		${PROJECT_SOURCE_DIR}/src/WidgetLog.h
 		${PROJECT_SOURCE_DIR}/src/WidgetConfig.h
 		${PROJECT_SOURCE_DIR}/src/processor.h
 	)	
@@ -40,8 +41,9 @@ file(MAKE_DIRECTORY ${PROJECT_SOURCE_DIR}/tmp)
 	list(APPEND SRC_Qt
 		${PROJECT_SOURCE_DIR}/src/app.cpp
 		${PROJECT_SOURCE_DIR}/src/WidgetConfig.cpp
+		${PROJECT_SOURCE_DIR}/src/WidgetLog.cpp
 		${PROJECT_SOURCE_DIR}/src/processor.cpp
-		)
+	)
 	
 	foreach(i  ${SRC_Qt_MOC})
 		string(REPLACE "/" ";" parse_i_1 ${i})
@@ -67,6 +69,7 @@ file(MAKE_DIRECTORY ${PROJECT_SOURCE_DIR}/tmp)
 
 list(APPEND SRC
 	${CMAKE_CURRENT_LIST_DIR}/src/main.cpp
+	${CMAKE_CURRENT_LIST_DIR}/src/mpNC.h
 )
 
 list(APPEND INCL
@@ -96,6 +99,7 @@ else()
 	debug ${PROJECT_SOURCE_DIR}/bin/lib/Qt6Guid.lib optimized ${PROJECT_SOURCE_DIR}/bin/lib/Qt6Gui.lib
 	debug ${PROJECT_SOURCE_DIR}/bin/lib/Qt6Widgetsd.lib optimized ${PROJECT_SOURCE_DIR}/bin/lib/Qt6Widgets.lib	
 	debug ${PROJECT_SOURCE_DIR}/bin/lib/Qt6OpenGLWidgetsd.lib optimized ${PROJECT_SOURCE_DIR}/bin/lib/Qt6OpenGLWidgets.lib	
+
     
 	)	
 endif()
@@ -127,8 +131,6 @@ endif()
 display_elements(COMPILE_OPTION "${COMPILE_OPTION}")
 display_elements(LINKLIBS "${LINKLIBS}")
 
-
-
 add_executable(${PROJECT_NAME} 
 	${SRC}
 	${SRC_Qt_MOC}
@@ -137,7 +139,9 @@ add_executable(${PROJECT_NAME}
 
 
 target_include_directories(${PROJECT_NAME}	PRIVATE	${INCL}  )
-target_link_libraries(${PROJECT_NAME} ${LINKLIBS})
+target_link_libraries(${PROJECT_NAME} ${LINKLIBS}
+	${CMAKE_CURRENT_LIST_DIR}/bin/mpNC.lib 
+)
 if(MSVC)
 	target_compile_options(${PROJECT_NAME} PRIVATE ${COMPILE_OPTION})
 else()
