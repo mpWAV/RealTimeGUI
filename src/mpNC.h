@@ -3,7 +3,7 @@
 #if _WIN32
 #define CHAR_TYPE wchar_t
 #ifdef _EXPORT_
-#define DLL_PREFIX  __declspec(dllexport)
+#define DLL_PREFIX extern "C" __declspec(dllexport)
 #else
 #define DLL_PREFIX 
 #endif
@@ -12,7 +12,7 @@
 #define CHAR_TYPE char
 #endif
 
-#if __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -26,13 +26,12 @@ extern "C" {
   DLL_PREFIX void mpNC_process_float64(void* obj, double* buf_in, double* buf_out);
 
   DLL_PREFIX void mpNC_enable_realtime_mode(void* obj);
+  DLL_PREFIX void mpNC_disable_realtime_mode(void* obj);
   DLL_PREFIX void mpNC_reset_state(void* obj);
 
-#if __cplusplus
+#ifdef __cplusplus
 }
 #endif
-
-
 
 
 

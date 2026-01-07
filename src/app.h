@@ -27,6 +27,9 @@ private:
   QPushButton btn_play;
   QPushButton btn_load;
 
+  QCheckBox chk_mpNC;
+  QCheckBox chk_priority;
+
   QTabWidget widget_main;
   WidgetConfig widget_config;
   WidgetLog widget_log;

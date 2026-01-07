@@ -23,11 +23,12 @@ public:
     setupUI();
   }
 
+public slots:
   /**
    * @brief Appends a new log message with a timestamp.
    * @param message The log content to be displayed.
    */
-  void appendLog(const QString& message);
+  void SlotAppendLog(const QString& message);
 private slots:
   /**
    * @brief Opens a file dialog to save the current logs into a text file.

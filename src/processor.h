@@ -5,6 +5,8 @@
 #include "RtInput.h"
 #include "RtOutput.h"
 
+#include <chrono>
+
 #include <vector>
 #include <atomic>
 #include <thread>
@@ -60,6 +62,27 @@ public:
 signals:
   void signal_update(short*);
   void signal_process_done(const char*);
+
+
+  /* Delay */
+private : 
+  int cnt_delay = 0;
+  double max_delay = 0.0;
+  double avg_delay = 0.0;
+  double sum_delay = 0.0;
+  double elapsed_time = 0.0;
+
+  bool mpNC_on = false;
+
+  void reset_delay();
+
+signals : 
+  void signal_append_log(QString);
+
+public :
+  void EnablempNC(bool);
+  void EnableRealtimeMode(bool enable);
+
 
 
 };

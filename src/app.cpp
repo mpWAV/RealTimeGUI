@@ -12,6 +12,30 @@ app::app(){
     layout_top.addWidget(&btn_load);
     btn_load.setText("Load");
 
+    layout_top.addWidget(new QLabel("mpNC"));
+    layout_top.addWidget(&chk_mpNC);
+    layout_top.addWidget(new QLabel("Priority"));
+    layout_top.addWidget(&chk_priority);
+
+    QObject::connect(&chk_priority, &QCheckBox::stateChanged, [&](int state) {
+      if (state == Qt::Checked) {
+        proc.EnableRealtimeMode(true);
+      }
+      else {
+        proc.EnableRealtimeMode(false);
+      }
+      });
+
+    QObject::connect(&chk_mpNC, &QCheckBox::stateChanged, [&](int state) {
+      if (state == Qt::Checked) {
+        proc.EnablempNC(true);
+      }
+      else {
+        proc.EnablempNC(false);
+      }
+      });
+
+
     // Param Edits
     /*
     https://doc.qt.io/qt-6/qdoublevalidator.html
@@ -20,6 +44,8 @@ app::app(){
    
     layout_main.addLayout(&layout_top);
     layout_top.setAlignment(Qt::AlignLeft);
+
+    QObject::connect(&proc, &processor::signal_append_log, &widget_log, &WidgetLog::SlotAppendLog);
 
     QObject::connect(&btn_play, &QPushButton::pressed, this, &app::slot_btn_play);
     /* Processor */
@@ -50,7 +76,7 @@ app::app(){
     widget_main.addTab(&widget_log, "log");
     widget_log.setStyleSheet("\
 		QWidget{background:rgb(255,255,255);}\
-    QPlainTextEdit{background:rgb(238, 238, 238);}\
+    QPlainTextEdit{background:rgb(255, 255, 255);}\
     \
     ");
 
@@ -67,7 +93,7 @@ app::app(){
     layout_main.addWidget(&widget_main);
   }
 
-  setMinimumSize(640,480);
+  setMinimumSize(840,640);
   setLayout(&layout_main);
 
   // Apply param
