@@ -1,6 +1,5 @@
 #include "processor.h"
 
-
 processor::processor() {
   atomic_thread.store(false);
   buf_in = new short[in_channels * n_hop];
@@ -20,7 +19,7 @@ void processor::Process() {
   atomic_thread.store(true);
 
   mpNCObj = mpNC_construct3(L"mpNC.onnx", 1,2);
-
+  mpNC_enable_latency(mpNCObj,4096,8192);
 
   rt_output = new RtOutput(device_out, out_channels, sr, sr, n_hop, n_hop);
   rt_output->PrepStream();
@@ -34,6 +33,10 @@ void processor::Process() {
   double cur_delay = 0.0;
   reset_delay();
 
+  WAV input(1, 16000);
+  WAV output(1, 16000);
+  input.NewFile("input.wav");
+  output.NewFile("output.wav");
 
   emit(signal_append_log(QString("Start.")));
 
@@ -45,6 +48,7 @@ void processor::Process() {
       for (int i = 0; i < n_hop * in_channels; i++) {
         buf_in[i] = buf_in[i] * multiple;
       }
+      input.Append(buf_in, n_hop);
       //emit(signal_update(buf_in));
       auto t0 = std::chrono::high_resolution_clock::now();
       if(mpNC_on)
@@ -68,10 +72,9 @@ void processor::Process() {
         QString msg = QString::asprintf("[%10.3lfs][%4d]Delay(ms) %6.2lf  | %4.2lf/s | avg %6.2lf | max %6.2lf |",elapsed_sec, cnt_delay, cur_delay, (double)(cnt_delay)/elapsed_sec, avg_delay, max_delay);
 
         emit(signal_append_log(msg));
-
       }
 
-
+      output.Append(buf_in, n_hop);
       for (int i = 0; i < out_channels; i++) {
         for (int j = 0; j < n_hop; j++) {
           buf_out[j * out_channels + i] = buf_in[j];
@@ -85,6 +88,8 @@ void processor::Process() {
   atomic_thread.store(false);
   mpNC_release(mpNCObj);
   mpNCObj = nullptr;
+  input.Finish();
+  output.Finish();
 }
 
 void processor::Process(const char* path){
@@ -177,12 +182,12 @@ void processor::reset_delay() {
 void processor::EnableRealtimeMode(bool flag) {
   if (mpNCObj) {
     if (flag) {
-      mpNC_enable_realtime_mode(mpNCObj);
+      //mpNC_enable_realtime_mode(mpNCObj);
       signal_append_log(QString("Enable mpNC realtime mode"));
     }
     else {
       signal_append_log(QString("Disable mpNC realtime mode"));
-      mpNC_disable_realtime_mode(mpNCObj);
+      //mpNC_disable_realtime_mode(mpNCObj);
     }
   }
   else 

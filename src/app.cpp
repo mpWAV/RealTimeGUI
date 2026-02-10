@@ -89,7 +89,6 @@ app::app(){
       ");
 
     widget_config.Add("Input/Output", "../config/io.json");
-    widget_config.Add("colormap", "../config/display.json");
     layout_main.addWidget(&widget_main);
   }
 
