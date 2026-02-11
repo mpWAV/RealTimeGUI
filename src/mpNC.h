@@ -29,6 +29,8 @@ DLL_PREFIX void mpNC_process_float64(void*obj, double *buf_in, double *buf_out);
 
 DLL_PREFIX void mpNC_enable_latency(void* obj, int buffer_size, int initial_delay);
 DLL_PREFIX void mpNC_disable_latency(void* obj);
+DLL_PREFIX void mpNC_set_VAD_thr(void* obj,double);
+
 
 DLL_PREFIX void mpNC_enable_realtime_mode(void* obj);
 DLL_PREFIX void mpNC_disable_realtime_mode(void* obj);
