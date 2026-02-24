@@ -29,6 +29,7 @@ private:
 
   short* buf_in = nullptr;
   short* buf_out = nullptr;
+  short* buf_tmp = nullptr;
 
   std::thread* thread_process = nullptr;
   std::atomic<bool> atomic_thread; // is thread running ?

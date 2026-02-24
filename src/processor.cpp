@@ -4,11 +4,13 @@ processor::processor() {
   atomic_thread.store(false);
   buf_in = new short[in_channels * n_hop];
   buf_out = new short[out_channels * n_hop];
+  buf_tmp = new short[in_channels * n_hop];
 }
 
 processor::~processor() {
   delete[] buf_in;
   delete[] buf_out;
+  delete[] buf_tmp;
 }
 
 void processor::Process() {
@@ -19,8 +21,8 @@ void processor::Process() {
   atomic_thread.store(true);
 
   mpNCObj = mpNC_construct3(L"mpNC.onnx", 1,2);
-  mpNC_enable_latency(mpNCObj,4096,8192);
-  mpNC_set_VAD_thr(mpNCObj, 0.2);
+  mpNC_enable_latency(mpNCObj,2028,4096);
+  //mpNC_set_VAD_thr(mpNCObj, 0.2);
 
   rt_output = new RtOutput(device_out, out_channels, sr, sr, n_hop, n_hop);
   rt_output->PrepStream();
@@ -43,7 +45,7 @@ void processor::Process() {
 
   auto time_start = std::chrono::high_resolution_clock::now();
   while (rt_input->IsRunning()) {
-    if (rt_input->data.stock.load() > n_hop) {
+    if (rt_input->data.stock.load() >= n_hop) {
       rt_input->GetBuffer(buf_in);
       // scaling
       for (int i = 0; i < n_hop * in_channels; i++) {
@@ -52,7 +54,7 @@ void processor::Process() {
       input.Append(buf_in, n_hop);
       //emit(signal_update(buf_in));
       auto t0 = std::chrono::high_resolution_clock::now();
-      if(mpNC_on)mpNC_process_int16(mpNCObj, buf_in, buf_in);
+      if(mpNC_on)mpNC_process_int16(mpNCObj, buf_in, buf_tmp);
       auto t1 = std::chrono::high_resolution_clock::now();
       std::chrono::duration<double, std::milli> elapsed = t1 - t0;
       cur_delay = elapsed.count();
