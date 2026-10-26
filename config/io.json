@@ -5,7 +5,7 @@
     },
     "input_device": {
         "type": "int",
-        "value": 11
+        "value": 133
     },
     "multiple": {
         "type": "int",
@@ -13,7 +13,7 @@
     },
     "output_device": {
         "type": "int",
-        "value": 0
+        "value": 130
     },
     "samplerate": {
         "options": [

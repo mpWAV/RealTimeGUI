@@ -1,4 +1,4 @@
-#include <QObject>
+﻿#include <QObject>
 
 #include "WAV.h"
 #include "STFT.h"
@@ -47,10 +47,15 @@ public:
   /* param */
 
   int in_channels = 1;
-  const int out_channels = 2;
+  const int out_channels = 1;
   int sr = 16000;
   int n_fft = 512;
-  int n_hop = 128;
+  // mpNCw_process_int16() 이 정확히 160 샘플을 읽고 160 샘플을 쓴다
+  // (mpNCw_decl.h 의 n_hop_in / n_hop_out, const 이고 인자가 아니다).
+  // 이 값이 160 이 아니면 블록 앞 160 개만 처리되고 뒤쪽은 손대지 않은 값이
+  // 남아 조용히 소리가 깨진다. mpNCw 쪽이 바뀌지 않는 한 고정이다.
+  // 입출력 버퍼, RtInput / RtOutput 프레임 크기가 모두 이 값에서 나온다.
+  int n_hop = 160; // was 256, mpNC_* 를 직접 부르던 시절의 값
   double multiple = 1.0;
 
   int cnt = 0;

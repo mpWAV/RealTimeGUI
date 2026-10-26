@@ -1,7 +1,9 @@
 #include <QApplication>
 #include "app.h"
 
+
 int main(int argc, char*argv[]){
+	//SetPriorityClass(GetCurrentProcess(), HIGH_PRIORITY_CLASS);
 #ifdef _WIN32
       #ifdef NDEBUG
       //	ShowWindow(::GetConsoleWindow(), SW_HIDE);
