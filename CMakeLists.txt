@@ -150,4 +150,46 @@ target_compile_options(${PROJECT_NAME} PRIVATE ${COMPILE_OPTION} )
 
 set_target_properties(${PROJECT_NAME} PROPERTIES  CXX_STANDARD 17)
 
+# ---------------------------------------------------------------------------
+#  실행에 필요한 것을 exe 옆(bin/Release, bin/Debug)에 배치한다.
+#
+#  Windows 는 DLL 을 exe 디렉터리에서 먼저 찾는다. 원본은 bin/ 에 있으므로
+#  복사하지 않으면 "DLL 을 찾을 수 없습니다" 가 뜬다.
+#
+#  Qt DLL 은 Debug 에서 이름 뒤에 d 가 붙는다 (Qt6Cored.dll). 구성에 따라
+#  고르기 위해 제네릭 표현식을 쓴다.
+#
+#  config/io.json 은 app.cpp 가 ../config/io.json 으로 읽으므로 exe 디렉터리의
+#  한 단계 위(bin/config/)에 둔다. 마스터는 RealTimeGUI/config/ 이고 여기로
+#  복사되는 것이므로, 장치 번호를 바꿀 때는 마스터를 고칠 것 - bin/config/ 를
+#  고치면 다음 빌드에 덮어써진다.
+# ---------------------------------------------------------------------------
+set(QTD "$<$<CONFIG:Debug>:d>")
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+	COMMAND ${CMAKE_COMMAND} -E copy_if_different
+		${CMAKE_CURRENT_LIST_DIR}/bin/Qt6Core${QTD}.dll
+		${CMAKE_CURRENT_LIST_DIR}/bin/Qt6Gui${QTD}.dll
+		${CMAKE_CURRENT_LIST_DIR}/bin/Qt6Widgets${QTD}.dll
+		${CMAKE_CURRENT_LIST_DIR}/bin/IR_Link_mpNC.dll
+		${CMAKE_CURRENT_LIST_DIR}/bin/onnxruntime.dll
+		${CMAKE_CURRENT_LIST_DIR}/bin/onnxruntime_providers_shared.dll
+		$<TARGET_FILE_DIR:${PROJECT_NAME}>
+	COMMAND ${CMAKE_COMMAND} -E make_directory
+		$<TARGET_FILE_DIR:${PROJECT_NAME}>/platforms
+	COMMAND ${CMAKE_COMMAND} -E copy_if_different
+		${CMAKE_CURRENT_LIST_DIR}/bin/platforms/qwindows${QTD}.dll
+		$<TARGET_FILE_DIR:${PROJECT_NAME}>/platforms
+	COMMAND ${CMAKE_COMMAND} -E make_directory
+		${CMAKE_BINARY_DIR}/config
+	COMMAND ${CMAKE_COMMAND} -E copy_if_different
+		${CMAKE_CURRENT_LIST_DIR}/config/io.json
+		${CMAKE_BINARY_DIR}/config
+	COMMENT "Copying Qt / mpNC / onnxruntime DLLs and config next to the exe"
+	)
+
+# F5 로 실행할 때도 ../config 가 맞도록 작업 디렉터리를 exe 쪽으로 맞춘다.
+set_target_properties(${PROJECT_NAME} PROPERTIES
+	VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/$<CONFIG>
+	)
+
 
