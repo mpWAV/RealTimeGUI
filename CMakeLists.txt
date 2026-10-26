@@ -139,7 +139,7 @@ add_executable(${PROJECT_NAME}
 
 target_include_directories(${PROJECT_NAME}	PRIVATE	${INCL}  )
 target_link_libraries(${PROJECT_NAME} ${LINKLIBS}
-	${CMAKE_CURRENT_LIST_DIR}/bin/mpNC.lib 
+	${CMAKE_CURRENT_LIST_DIR}/bin/IR_Link_mpNC.lib 
 )
 if(MSVC)
 	target_compile_options(${PROJECT_NAME} PRIVATE ${COMPILE_OPTION})
