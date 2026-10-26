@@ -3,7 +3,8 @@
 	url = https://github.com/koobh/KJsonConfig
 [submodule "lib/RtAudioWrapper"]
 	path = lib/RtAudioWrapper
-	url = https://github.com/koobh/RtAudioWrapper
+	url = https://github.com/mpWAV/RtAudioWrapper
+	branch = ko
 [submodule "lib/STFT"]
 	path = lib/STFT
 	url = https://github.com/koobh/STFT
