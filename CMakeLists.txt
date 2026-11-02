@@ -10,6 +10,56 @@ set(INCL)
 set(SRC_Qt_MOC)
 set(SRC_Qt)
 
+# ---------------------------------------------------------------------------
+#  Qt / mpNC 위치 선택
+#
+#  기본값은 기존 구성인 x64 + Qt6 (bin/ 의 QtBin 서브모듈). 아무 것도 넘기지
+#  않으면 예전과 똑같이 동작한다.
+#
+#  win32 는 Qt6 로 빌드할 수 없다. QtBin 의 Qt 는 x64 전용이고, Qt 6 는 32비트
+#  Windows 공식 바이너리를 배포하지 않는다. 그래서 win32 는 Qt 5.15 의 32비트
+#  키트를 따로 받아 QT_ROOT 로 지정한다. 이 프로젝트가 쓰는 Qt API 는 전부
+#  고전 QtWidgets 클래스라서 Qt5 에서도 소스 수정 없이 컴파일된다.
+#
+#    x64 + Qt6 (기본)
+#      cmake -S . -B build -A x64
+#
+#    win32 + Qt5
+#      cmake -S . -B build32 -A Win32 -DQT_MAJOR=5
+#            -DQT_ROOT=<Qt5 키트>/5.15.2/msvc2019
+#            -DMPNC_DIR=<win32 패키지>/bin
+#
+#  키트 배치가 버전마다 다르다. Qt6(QtBin)은 DLL 이 루트에 있고 플랫폼
+#  플러그인이 platforms/ 에 있다. Qt5 공식 키트는 DLL 이 bin/ 에, 플러그인이
+#  plugins/platforms/ 에 있다.
+# ---------------------------------------------------------------------------
+set(QT_MAJOR "6" CACHE STRING "Qt major version : 5 or 6")
+set(QT_ROOT "${PROJECT_SOURCE_DIR}/bin" CACHE PATH "Qt kit root directory")
+set(MPNC_DIR "${PROJECT_SOURCE_DIR}/bin" CACHE PATH "IR_Link_mpNC / onnxruntime directory")
+
+set(QT_INC_DIR ${QT_ROOT}/include)
+set(QT_LIB_DIR ${QT_ROOT}/lib)
+if(QT_MAJOR STREQUAL "5")
+	set(QT_DLL_DIR    ${QT_ROOT}/bin)
+	set(QT_PLUGIN_DIR ${QT_ROOT}/plugins/platforms)
+	set(QT_MOC        ${QT_ROOT}/bin/moc.exe)
+	# Qt5 는 QOpenGLWidget 이 QtWidgets 안에 있어서 별도 모듈이 없다.
+	set(QT_MODULES Core Gui Widgets)
+else()
+	set(QT_DLL_DIR    ${QT_ROOT})
+	set(QT_PLUGIN_DIR ${QT_ROOT}/platforms)
+	set(QT_MOC        ${QT_ROOT}/moc.exe)
+	set(QT_MODULES Core Gui Widgets OpenGLWidgets)
+endif()
+
+# exe 옆에 복사할 Qt 런타임. 링크 대상과 다르다 - OpenGLWidgets 는 링크만 되고
+# 실제로 임포트되지 않아서 복사하지 않는다.
+set(QT_RUNTIME_MODULES Core Gui Widgets)
+
+message(STATUS "QT_MAJOR = ${QT_MAJOR}")
+message(STATUS "QT_ROOT  = ${QT_ROOT}")
+message(STATUS "MPNC_DIR = ${MPNC_DIR}")
+
 include(${CMAKE_CURRENT_LIST_DIR}/lib/STFT/cpp/STFT_cpp.cmake)
 
 include(${CMAKE_CURRENT_LIST_DIR}/lib/RtAudioWrapper/RtAudio.cmake)
@@ -25,7 +75,11 @@ macro(display_elements
     endforeach()
 endmacro()
 
-file(MAKE_DIRECTORY ${PROJECT_SOURCE_DIR}/tmp)
+# moc 산출물은 Qt 버전별로 나눈다. 한 폴더를 공유하면 win32(Qt5) 를 구성한
+# 뒤에 x64(Qt6) 를 다시 빌드할 때 Qt5 moc 산출물이 Qt6 헤더로 컴파일되면서
+# 깨진다. 둘 다 .gitignore 의 tmp 아래라 추적되지 않는다.
+set(MOC_DIR ${PROJECT_SOURCE_DIR}/tmp/qt${QT_MAJOR})
+file(MAKE_DIRECTORY ${MOC_DIR})
 
 ## MOC(Meta Object Compiler) of QtFramework
 #display_elements(MOC_TARGET ${SRC_Qt_MOC})
@@ -35,31 +89,35 @@ file(MAKE_DIRECTORY ${PROJECT_SOURCE_DIR}/tmp)
 		${PROJECT_SOURCE_DIR}/src/WidgetLog.h
 		${PROJECT_SOURCE_DIR}/src/WidgetConfig.h
 		${PROJECT_SOURCE_DIR}/src/processor.h
-	)	
-	
-	## sources without MetaObject 
+	)
+
+	## sources without MetaObject
 	list(APPEND SRC_Qt
 		${PROJECT_SOURCE_DIR}/src/app.cpp
 		${PROJECT_SOURCE_DIR}/src/WidgetConfig.cpp
 		${PROJECT_SOURCE_DIR}/src/WidgetLog.cpp
 		${PROJECT_SOURCE_DIR}/src/processor.cpp
 	)
-	
+
 	foreach(i  ${SRC_Qt_MOC})
 		string(REPLACE "/" ";" parse_i_1 ${i})
 		LIST(GET parse_i_1 -1 parse_i_2)
 		string(REPLACE "." ";" parse_i_3 ${parse_i_2})
 		LIST(GET parse_i_3 0 fisrt_element)
-		
+
 		if(MSVC)
+			# moc 는 Qt 버전마다 다른 것을 써야 한다. 예전에는 이름만 'moc' 로
+			# 불러서 실패해도 조용히 넘어갔고, tmp/ 에 남아 있던 이전 버전의
+			# moc 산출물로 빌드가 계속됐다. 절대 경로로 부르고 실패를 에러로
+			# 만든다.
 			execute_process(
-			COMMAND moc ${i} -o ${PROJECT_SOURCE_DIR}/tmp/moc_${fisrt_element}.cpp
-			WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/bin  
+			COMMAND ${QT_MOC} ${i} -o ${MOC_DIR}/moc_${fisrt_element}.cpp
+			COMMAND_ERROR_IS_FATAL ANY
 			 )
 		endif()
-		
+
 		list(APPEND SRC_Qt
-			tmp/moc_${fisrt_element}.cpp
+			${MOC_DIR}/moc_${fisrt_element}.cpp
 		)
 	endforeach()
 
@@ -74,16 +132,22 @@ list(APPEND SRC
 
 list(APPEND INCL
 	${CMAKE_CURRENT_LIST_DIR}/src
-	${CMAKE_CURRENT_LIST_DIR}/tmp
+	${MOC_DIR}
 	# QtFramework
-	bin/include
-	bin/include/QtCore
-	bin/include/QtCore5Compat
-	bin/include/QtGui
-	bin/include/QtWidgets
-	bin/include/QtOpenGL
-	bin/include/QtOpenGLWidgets
+	${QT_INC_DIR}
+	${QT_INC_DIR}/QtCore
+	${QT_INC_DIR}/QtGui
+	${QT_INC_DIR}/QtWidgets
 )
+
+if(NOT QT_MAJOR STREQUAL "5")
+	# Qt6 전용 모듈. Qt5 에는 이 디렉터리가 없다.
+	list(APPEND INCL
+		${QT_INC_DIR}/QtCore5Compat
+		${QT_INC_DIR}/QtOpenGL
+		${QT_INC_DIR}/QtOpenGLWidgets
+	)
+endif()
 
 if(NOT MSVC)
 	list(APPEND LINKLIBS
@@ -93,14 +157,12 @@ if(NOT MSVC)
     -fopenmp
 	)
 else()
-	list(APPEND LINKLIBS
-	
-	debug ${PROJECT_SOURCE_DIR}/bin/lib/Qt6Cored.lib optimized ${PROJECT_SOURCE_DIR}/bin/lib/Qt6Core.lib
-	debug ${PROJECT_SOURCE_DIR}/bin/lib/Qt6Guid.lib optimized ${PROJECT_SOURCE_DIR}/bin/lib/Qt6Gui.lib
-	debug ${PROJECT_SOURCE_DIR}/bin/lib/Qt6Widgetsd.lib optimized ${PROJECT_SOURCE_DIR}/bin/lib/Qt6Widgets.lib	
-	debug ${PROJECT_SOURCE_DIR}/bin/lib/Qt6OpenGLWidgetsd.lib optimized ${PROJECT_SOURCE_DIR}/bin/lib/Qt6OpenGLWidgets.lib	
-
-	)	
+	foreach(m ${QT_MODULES})
+		list(APPEND LINKLIBS
+			debug     ${QT_LIB_DIR}/Qt${QT_MAJOR}${m}d.lib
+			optimized ${QT_LIB_DIR}/Qt${QT_MAJOR}${m}.lib
+		)
+	endforeach()
 endif()
 
 
@@ -116,7 +178,7 @@ if(NOT MSVC)
 	# -Os : minimize size of executable
 	  -O3
 	)
-	
+
 else()
 list(APPEND COMPILE_OPTION
 # Visual Studio uses '/' for compile option
@@ -130,7 +192,7 @@ endif()
 display_elements(COMPILE_OPTION "${COMPILE_OPTION}")
 display_elements(LINKLIBS "${LINKLIBS}")
 
-add_executable(${PROJECT_NAME} 
+add_executable(${PROJECT_NAME}
 	${SRC}
 	${SRC_Qt_MOC}
 	${SRC_Qt}
@@ -139,7 +201,7 @@ add_executable(${PROJECT_NAME}
 
 target_include_directories(${PROJECT_NAME}	PRIVATE	${INCL}  )
 target_link_libraries(${PROJECT_NAME} ${LINKLIBS}
-	${CMAKE_CURRENT_LIST_DIR}/bin/IR_Link_mpNC.lib 
+	${MPNC_DIR}/IR_Link_mpNC.lib
 )
 if(MSVC)
 	target_compile_options(${PROJECT_NAME} PRIVATE ${COMPILE_OPTION})
@@ -153,8 +215,8 @@ set_target_properties(${PROJECT_NAME} PROPERTIES  CXX_STANDARD 17)
 # ---------------------------------------------------------------------------
 #  실행에 필요한 것을 exe 옆(bin/Release, bin/Debug)에 배치한다.
 #
-#  Windows 는 DLL 을 exe 디렉터리에서 먼저 찾는다. 원본은 bin/ 에 있으므로
-#  복사하지 않으면 "DLL 을 찾을 수 없습니다" 가 뜬다.
+#  Windows 는 DLL 을 exe 디렉터리에서 먼저 찾는다. 원본은 QT_DLL_DIR / MPNC_DIR
+#  에 있으므로 복사하지 않으면 "DLL 을 찾을 수 없습니다" 가 뜬다.
 #
 #  Qt DLL 은 Debug 에서 이름 뒤에 d 가 붙는다 (Qt6Cored.dll). 구성에 따라
 #  고르기 위해 제네릭 표현식을 쓴다.
@@ -165,19 +227,23 @@ set_target_properties(${PROJECT_NAME} PROPERTIES  CXX_STANDARD 17)
 #  고치면 다음 빌드에 덮어써진다.
 # ---------------------------------------------------------------------------
 set(QTD "$<$<CONFIG:Debug>:d>")
+
+set(QT_RUNTIME_DLLS)
+foreach(m ${QT_RUNTIME_MODULES})
+	list(APPEND QT_RUNTIME_DLLS ${QT_DLL_DIR}/Qt${QT_MAJOR}${m}${QTD}.dll)
+endforeach()
+
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
 	COMMAND ${CMAKE_COMMAND} -E copy_if_different
-		${CMAKE_CURRENT_LIST_DIR}/bin/Qt6Core${QTD}.dll
-		${CMAKE_CURRENT_LIST_DIR}/bin/Qt6Gui${QTD}.dll
-		${CMAKE_CURRENT_LIST_DIR}/bin/Qt6Widgets${QTD}.dll
-		${CMAKE_CURRENT_LIST_DIR}/bin/IR_Link_mpNC.dll
-		${CMAKE_CURRENT_LIST_DIR}/bin/onnxruntime.dll
-		${CMAKE_CURRENT_LIST_DIR}/bin/onnxruntime_providers_shared.dll
+		${QT_RUNTIME_DLLS}
+		${MPNC_DIR}/IR_Link_mpNC.dll
+		${MPNC_DIR}/onnxruntime.dll
+		${MPNC_DIR}/onnxruntime_providers_shared.dll
 		$<TARGET_FILE_DIR:${PROJECT_NAME}>
 	COMMAND ${CMAKE_COMMAND} -E make_directory
 		$<TARGET_FILE_DIR:${PROJECT_NAME}>/platforms
 	COMMAND ${CMAKE_COMMAND} -E copy_if_different
-		${CMAKE_CURRENT_LIST_DIR}/bin/platforms/qwindows${QTD}.dll
+		${QT_PLUGIN_DIR}/qwindows${QTD}.dll
 		$<TARGET_FILE_DIR:${PROJECT_NAME}>/platforms
 	COMMAND ${CMAKE_COMMAND} -E make_directory
 		${CMAKE_BINARY_DIR}/config
@@ -191,5 +257,3 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
 set_target_properties(${PROJECT_NAME} PROPERTIES
 	VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/$<CONFIG>
 	)
-
-
